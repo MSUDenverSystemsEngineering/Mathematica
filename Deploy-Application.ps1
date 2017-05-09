@@ -57,14 +57,14 @@ Try {
 	##*===============================================
 	## Variables: Application
 	[string]$appVendor = ''
-	[string]$appName = ''
-	[string]$appVersion = ''
-	[string]$appArch = ''
+	[string]$appName = 'Mathematica'
+	[string]$appVersion = '11.1.1'
+	[string]$appArch = 'x86'
 	[string]$appLang = 'EN'
 	[string]$appRevision = '01'
 	[string]$appScriptVersion = '1.0.0'
-	[string]$appScriptDate = '02/12/2017'
-	[string]$appScriptAuthor = '<author name>'
+	[string]$appScriptDate = '05/09/2017'
+	[string]$appScriptAuthor = 'Quan Tran'
 	##*===============================================
 	## Variables: Install Titles (Only set here to override defaults set by the toolkit)
 	[string]$installName = ''
@@ -112,7 +112,7 @@ Try {
 		[string]$installPhase = 'Pre-Installation'
 		
 		## Show Welcome Message, close Internet Explorer if required, allow up to 3 deferrals, verify there is enough disk space to complete the install, and persist the prompt
-		Show-InstallationWelcome -CloseApps 'iexplore' -AllowDefer -DeferTimes 3 -CheckDiskSpace -PersistPrompt
+		Show-InstallationWelcome -AllowDefer -DeferTimes 3 -CheckDiskSpace -PersistPrompt
 		
 		## Show Progress Message (with the default message)
 		Show-InstallationProgress
@@ -132,17 +132,22 @@ Try {
 		}
 		
 		## <Perform Installation tasks here>
+        #Execute-Process -Path "setup.exe" -Parameters "/exenoui /exelang 1033 /qn ACCEPT_EULA=1 LICENSE_SERVER=vmwas22 LICENSE_SERVER_PORT=27090 DISABLE_UPDATES=1" -WindowStyle "Hidden" -IgnoreExitCodes "3010"
+    
+        Execute-Process -Path "setup.exe" -Parameters "/verysilent" -IgnoreExitCodes "3010"
 		
-		
+
 		##*===============================================
 		##* POST-INSTALLATION
 		##*===============================================
 		[string]$installPhase = 'Post-Installation'
 		
 		## <Perform Post-Installation tasks here>
+
+        Copy-File -Path "$dirFiles\mathpass" -Destination "C:\ProgramData\Mathematica\Licensing"
 		
 		## Display a message at the end of the install
-		If (-not $useDefaultMsi) { Show-InstallationPrompt -Message 'You can customize text to appear at the end of an install or remove it completely for unattended installations.' -ButtonRightText 'OK' -Icon Information -NoWait }
+		If (-not $useDefaultMsi) { Show-InstallationPrompt -Message 'Mathematica 11.1.1 installed on this computer.' -ButtonRightText 'OK' -Icon Information -NoWait }
 	}
 	ElseIf ($deploymentType -ieq 'Uninstall')
 	{
