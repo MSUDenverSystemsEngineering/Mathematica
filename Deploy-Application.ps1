@@ -125,7 +125,9 @@ Try {
 		Show-InstallationProgress
 
 		## <Perform Pre-Installation tasks here>
-          Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\11.1\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
+		If ( Test-Path "$envProgramFiles\Wolfram Research\Mathematica\11.1\") {
+              Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\11.1\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
+  		}
 
 		##*===============================================
 		##* INSTALLATION
