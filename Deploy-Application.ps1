@@ -148,8 +148,7 @@ Try {
         #Execute-Process -Path "setup.exe" -Parameters "/exenoui /exelang 1033 /qn ACCEPT_EULA=1 LICENSE_SERVER=vmwas22 LICENSE_SERVER_PORT=27090 DISABLE_UPDATES=1" -WindowStyle "Hidden" -IgnoreExitCodes "3010"
 
         Execute-Process -Path "setup.exe" -Parameters "/verysilent" -IgnoreExitCodes "3010"
-
-
+		
 		##*===============================================
 		##* POST-INSTALLATION
 		##*===============================================
@@ -203,8 +202,6 @@ Try {
 		## <Perform Post-Uninstallation tasks here>
 
 		Remove-Folder "C:\Program Files\Wolfram Research" -ContinueOnError $True
-
-
 	}
 
 	##*===============================================
@@ -221,6 +218,8 @@ Catch {
 	Show-DialogBox -Text $mainErrorMessage -Icon 'Stop'
 	Exit-Script -ExitCode $mainExitCode
 }
+
+
 # SIG # Begin signature block
 # MIImVgYJKoZIhvcNAQcCoIImRzCCJkMCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
