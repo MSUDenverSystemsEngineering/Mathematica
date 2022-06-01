@@ -221,8 +221,6 @@ Catch {
 	Show-DialogBox -Text $mainErrorMessage -Icon 'Stop'
 	Exit-Script -ExitCode $mainExitCode
 }
-
-
 # SIG # Begin signature block
 # MIImVgYJKoZIhvcNAQcCoIImRzCCJkMCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
