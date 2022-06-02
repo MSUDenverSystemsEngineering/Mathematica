@@ -130,9 +130,11 @@ Try {
   		}elseif ( Test-Path "$envProgramFiles\Wolfram Research\Mathematica\12.0\") {
 			Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\12.0\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
 			Execute-MSI -Action Uninstall -Path '{460ACB2E-59A1-11E9-848B-0CC47AC03162}' -PassThru -ContinueOnError $true
+			Remove-Folder "C:\Program Files (x86)\Wolfram Research" -ContinueOnError $True
 		}elseif ( Test-Path "$envProgramFiles\Wolfram Research\Mathematica\13.0\") {
 			Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\13.0\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
 			Execute-MSI -Action Uninstall -Path '{4A18F840-75BA-11EC-9760-00155D8640AA}' -PassThru -ContinueOnError $true
+			Remove-Folder "C:\Program Files\Wolfram Research" -ContinueOnError $True
 		}
 
 		##*===============================================
@@ -220,8 +222,8 @@ Catch {
 # SIG # Begin signature block
 # MIImVgYJKoZIhvcNAQcCoIImRzCCJkMCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCBgLkM0Q9EzUXC7
-# kZfuuoGeshjmyt3/OUP8ytyTDeiUzqCCH8EwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDgmpY6UOwS3jVg
+# bgAvwOBrcY7nTQihq1d1KD6JkAT0OaCCH8EwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -395,32 +397,32 @@ Catch {
 # ZDErMCkGA1UEAxMiU2VjdGlnbyBQdWJsaWMgQ29kZSBTaWduaW5nIENBIFIzNgIR
 # AKVN33D73PFMVIK48rFyyjEwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIB
 # DDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEE
-# AYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQgM5TFpi9xkVu7
-# kthZVWF6V+tTNqtXTNsTOfFIlaArj1YwDQYJKoZIhvcNAQEBBQAEggGAPiIhMFbt
-# xo3K8d9F35XlWKkJ1q8/yNtBvGyU9e7GWUWoufiZkgHdc7jHqmKPCb7rkjltJm0Y
-# EgBT2621T3KMJ1XO/HauO4rBw5cIfQfzTbUGuF7YhepuZha8xeqxcGnxATErsOgg
-# X3JHkHKKGX6WKm7a/XohzbX6TGK5QeTuE2Cjq2z8ZY6Kh/iQxhr4En4regfi66so
-# wFY2DlDHiZ/KOIoOJvudfHC4+9FDhjDnyOlXECYPJ9KZWk6BfP8zCohAZed/7xyh
-# MolAGoJidfVjsRaQo2N3VpOrEnUKVYQPoJmpXb2c0bnlYTO51A4nPpzOLzqbZSXF
-# jl/kz+/6ycF/LRJN+M/ucacjT+jXEBhveHUye1HPLD98fypym+S128wbClvLxnm7
-# sZIi+eTEAKmeeSCOrYZqZZinKcE5cGTgbVykjKvbI0xXHmLB3YWqnDMrtKdsGIoY
-# va9Mdx8AptnFUn9AG0FJiKKvzalIMO+1OI0NhPazT8ulXZWtPyJUV2/ioYIDTDCC
+# AYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQg3CyPB1mPPvSi
+# G0RRMaSchlf2fCFvVNSzxiXIXv18gQcwDQYJKoZIhvcNAQEBBQAEggGAnuztGCEH
+# x3DujIzWlq7nMtJdkM1XvDlnjzPNchaQ8xwBA1NhCnCw8UKuwGqB3gsUo7D8Kyz9
+# wCRFeKnzkMlm6HyUyhqx1b0MbHzN/fyeg8SbTBDubIvs8nkulZTbwu13zFXVGUZK
+# X1SNA6/zQrRlCk7qK1Mh9kE0Ez2K7CYhMmR4bXR9mOfw2Tab7ljN7R/88t9aAcfw
+# HtVrsmL4wVKk+DXc6UbcjhcEsAulAb1dtNUgqqczivMLIhZJ743417ohZJTUiyAb
+# vWZ4J5cXdl+HHuS+3kqAPa/x/FdVPcr4mgbwLE3qvnP/Rsu3gRtLRTjOf4LMM/gD
+# uZnh5q4cr2oStNY1qtZOhxomhfSkrLIlaRzMZ8w4VI0YmA+UElDKGbf60QYriXZ0
+# PBvAFajSSE5H12cxvsKQ7tX9oDJiG82XWjS6AXtuLKYV+8Ur53eDMA8TDJeM0wTx
+# eVeod+Tc29BJBEz42rdXoI+hahIk8N4lIrko9gkWEZ5MS/0Pup1bkdUXoYIDTDCC
 # A0gGCSqGSIb3DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYD
 # VQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNV
 # BAoTD1NlY3RpZ28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBT
 # dGFtcGluZyBDQQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAY
 # BgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA2MDIy
-# MDQ4NDVaMD8GCSqGSIb3DQEJBDEyBDAqwt7pnVGwhaEUHKG1QWOHEfFxrjZqdCRr
-# yGh/txDIGplBqyz5mtRUEb5/ufRSHYkwDQYJKoZIhvcNAQEBBQAEggIAPTw9IWlx
-# 5wAHOANTdCfw6oJ5+0sTURJyiVkQkyTFRHQp03v8SBMshjvv78oMxSOB/ZnlGjWS
-# SxrFfdpE4jvRBCeVTsp81xEQna9YomxgB4gEeRzWTvyTy/Up4JC+Njn9qQqHQ68m
-# 5cQe9AibkPs3IDWmHEq/BdAuC+B5Mb0zSmMco4yM/cJs43zTWBFlmGeP4umwsPsZ
-# Qf9UsZSaRe71R7u1iev2hJiDULvoPXw9K6HE9Hdwiy+xGeKIpKNMJtN6cYuMgE0J
-# 6sxroAjJxtuc0y2/s7XheFX2KgBAGPKkd0mbMTJbh6Vs1WhYDu97ZTKTVZLnVaEV
-# 5/UzwMQV7NA6llLdLNdForVLUe3r0zUzoroGxban2qnx/quWAK3lYeP6mFvMvomC
-# i81mh7e+kwSLtR4s6O8SoZ6xxIFSTOroTEuS8FobAqviKnYMQpCcusgPoL5/ZvfK
-# vIrfuSvBTUZw2P3NnoWEaPNoJw9CeoACJdfdaEwjAsvVlEg0CYwDxltQq6H0wdhn
-# NKUhQb6BY3Xrob0aEVPciDaDQ6wInJLF5/HMNwR3/C8QRhsFp+6EV7IRQRVA9WTg
-# cGYnnDboKkZ2OCUGiBFEJ6I9J7MyTyLN6lKhoHWcwBYr/J5yBPLq+38kvWz5xCLb
-# kA3kpdcD1fn6jwp1bYt4yDVUD07sM/QKYcI=
+# MTQzMzBaMD8GCSqGSIb3DQEJBDEyBDCfudSyWxGmqTR/yEwstS8IdoQRpPp9S5rM
+# igdvdKBdEQs0gKdPmI95yT9NEuLJNjowDQYJKoZIhvcNAQEBBQAEggIAdI0VbkRi
+# 4xBQxbdqMfsIfltBUp7V2hKeC2JlOaa3OmpD63SmR6SoWIpyjbDTPNCMb06ATUb/
+# qxT2TqJkXJxW0yAd7Nrcj9eoc40gEOPbz0NJKE4ocVnAGhRZz9+XDiAn+Lk7khKv
+# 2DODeapHbDKi6uYVA5jQQTJ9UNP0g972BEnYAAYgrvjWCmhyCHX0/wzx2VCZeGJD
+# dUkQXEoG3Mmo8YjgdlgY+cxpNOOHS+ivnn9g4AmH+6t42YPRWdv/3rjY8iNVpgmg
+# /pYjc4+x5Ni5ExKowKhKPb3K3TsR6BNfB27EkbJB7Eh7wkVg/z6ka5G/1e62cXMb
+# g0SgshAsUufNKjpEqQfsRolEqoSFlH/xqciSSEnZYYPLnLzXCNheVGhM6CclipjT
+# 9d9irg2zfDewF5o6xo3gdhTrEbOAqL3E/F4uJLwEoiD29JaQ4lnYeahSm9CVrg9b
+# 2LGeYGhc/i6MvkfHIivbuCUlHfD6qk6qO+V6cHrtQFtTi+bVY5W7e9PqPEDcPX5A
+# fMCwfhRQ55yZ28MOsDWXJ3veOKm781yStk3EWFJT3/7oYLEyngaRMlo8H0+/c04J
+# ZfZjQ5QXj0iU0+3+5pmI44/CAjo/ySZDVaJGzMI1sNF3cvOI88Ok0kREPVhJN13f
+# gQu7T7TLJ7UQ+Sv5myEuvcSwq2/QbFgrBVY=
 # SIG # End signature block
