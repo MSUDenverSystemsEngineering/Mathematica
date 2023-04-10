@@ -1,229 +1,298 @@
 ﻿<#
 .SYNOPSIS
-	This script performs the installation or uninstallation of an application(s).
-	# LICENSE #
-	PowerShell App Deployment Toolkit - Provides a set of functions to perform common application deployment tasks on Windows.
-	Copyright (C) 2017 - Sean Lillis, Dan Cunningham, Muhammad Mashwani, Aman Motazedian.
-	This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-	You should have received a copy of the GNU Lesser General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
+PSApppDeployToolkit - This script performs the installation or uninstallation of an application(s).
 .DESCRIPTION
-	The script is provided as a template to perform an install or uninstall of an application(s).
-	The script either performs an "Install" deployment type or an "Uninstall" deployment type.
-	The install deployment type is broken down into 3 main sections/phases: Pre-Install, Install, and Post-Install.
-	The script dot-sources the AppDeployToolkitMain.ps1 script which contains the logic and functions required to install or uninstall an application.
+- The script is provided as a template to perform an install or uninstall of an application(s).
+- The script either performs an "Install" deployment type or an "Uninstall" deployment type.
+- The install deployment type is broken down into 3 main sections/phases: Pre-Install, Install, and Post-Install.
+The script dot-sources the AppDeployToolkitMain.ps1 script which contains the logic and functions required to install or uninstall an application.
+PSApppDeployToolkit is licensed under the GNU LGPLv3 License - (C) 2023 PSAppDeployToolkit Team (Sean Lillis, Dan Cunningham and Muhammad Mashwani).
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the
+Free Software Foundation, either version 3 of the License, or any later version. This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+for more details. You should have received a copy of the GNU Lesser General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
 .PARAMETER DeploymentType
-	The type of deployment to perform. Default is: Install.
+The type of deployment to perform. Default is: Install.
 .PARAMETER DeployMode
-	Specifies whether the installation should be run in Interactive, Silent, or NonInteractive mode. Default is: Interactive. Options: Interactive = Shows dialogs, Silent = No dialogs, NonInteractive = Very silent, i.e. no blocking apps. NonInteractive mode is automatically set if it is detected that the process is not user interactive.
+Specifies whether the installation should be run in Interactive, Silent, or NonInteractive mode. Default is: Interactive. Options: Interactive = Shows dialogs, Silent = No dialogs, NonInteractive = Very silent, i.e. no blocking apps. NonInteractive mode is automatically set if it is detected that the process is not user interactive.
 .PARAMETER AllowRebootPassThru
-	Allows the 3010 return code (requires restart) to be passed back to the parent process (e.g. SCCM) if detected from an installation. If 3010 is passed back to SCCM, a reboot prompt will be triggered.
+Allows the 3010 return code (requires restart) to be passed back to the parent process (e.g. SCCM) if detected from an installation. If 3010 is passed back to SCCM, a reboot prompt will be triggered.
 .PARAMETER TerminalServerMode
-	Changes to "user install mode" and back to "user execute mode" for installing/uninstalling applications for Remote Destkop Session Hosts/Citrix servers.
+Changes to "user install mode" and back to "user execute mode" for installing/uninstalling applications for Remote Desktop Session Hosts/Citrix servers.
 .PARAMETER DisableLogging
-	Disables logging to file for the script. Default is: $false.
+Disables logging to file for the script. Default is: $false.
 .EXAMPLE
-    powershell.exe -Command "& { & '.\Deploy-Application.ps1' -DeployMode 'Silent'; Exit $LastExitCode }"
+powershell.exe -Command "& { & '.\Deploy-Application.ps1' -DeployMode 'Silent'; Exit $LastExitCode }"
 .EXAMPLE
-    powershell.exe -Command "& { & '.\Deploy-Application.ps1' -AllowRebootPassThru; Exit $LastExitCode }"
+powershell.exe -Command "& { & '.\Deploy-Application.ps1' -AllowRebootPassThru; Exit $LastExitCode }"
 .EXAMPLE
-    powershell.exe -Command "& { & '.\Deploy-Application.ps1' -DeploymentType 'Uninstall'; Exit $LastExitCode }"
+powershell.exe -Command "& { & '.\Deploy-Application.ps1' -DeploymentType 'Uninstall'; Exit $LastExitCode }"
 .EXAMPLE
-    Deploy-Application.exe -DeploymentType "Install" -DeployMode "Silent"
+Deploy-Application.exe -DeploymentType "Install" -DeployMode "Silent"
+.INPUTS
+None
+You cannot pipe objects to this script.
+.OUTPUTS
+None
+This script does not generate any output.
 .NOTES
-	Toolkit Exit Code Ranges:
-	60000 - 68999: Reserved for built-in exit codes in Deploy-Application.ps1, Deploy-Application.exe, and AppDeployToolkitMain.ps1
-	69000 - 69999: Recommended for user customized exit codes in Deploy-Application.ps1
-	70000 - 79999: Recommended for user customized exit codes in AppDeployToolkitExtensions.ps1
+Toolkit Exit Code Ranges:
+- 60000 - 68999: Reserved for built-in exit codes in Deploy-Application.ps1, Deploy-Application.exe, and AppDeployToolkitMain.ps1
+- 69000 - 69999: Recommended for user customized exit codes in Deploy-Application.ps1
+- 70000 - 79999: Recommended for user customized exit codes in AppDeployToolkitExtensions.ps1
+ZERO-TOUCH MSI: To perform Zero-Touch MSI install, leave $appName blank
 .LINK
-	http://psappdeploytoolkit.com
+https://psappdeploytoolkit.com
 #>
+
+
 [CmdletBinding()]
-## Suppress PSScriptAnalyzer errors for not using declared variables during AppVeyor build
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments", "", Justification="Suppresses AppVeyor errors on informational variables below")]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseDeclaredVarsMoreThanAssignments", "", Justification="Suppress AppVeyor errors on unused variables below")]
 Param (
-	[Parameter(Mandatory=$false)]
-	[ValidateSet('Install','Uninstall')]
-	[string]$DeploymentType = 'Install',
-	[Parameter(Mandatory=$false)]
-	[ValidateSet('Interactive','Silent','NonInteractive')]
-	[string]$DeployMode = 'Interactive',
-	[Parameter(Mandatory=$false)]
-	[switch]$AllowRebootPassThru = $false,
-	[Parameter(Mandatory=$false)]
-	[switch]$TerminalServerMode = $false,
-	[Parameter(Mandatory=$false)]
-	[switch]$DisableLogging = $false
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Install', 'Uninstall', 'Repair')]
+    [String]$DeploymentType = 'Install',
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Interactive', 'Silent', 'NonInteractive')]
+    [String]$DeployMode = 'Interactive',
+    [Parameter(Mandatory = $false)]
+    [switch]$AllowRebootPassThru = $false,
+    [Parameter(Mandatory = $false)]
+    [switch]$TerminalServerMode = $false,
+    [Parameter(Mandatory = $false)]
+    [switch]$DisableLogging = $false
 )
 
 Try {
-	## Set the script execution policy for this process
-	Try { Set-ExecutionPolicy -ExecutionPolicy 'ByPass' -Scope 'Process' -Force -ErrorAction 'Stop' } Catch { Write-Error "Failed to set the execution policy to Bypass for this process." }
 
-	##*===============================================
-	##* VARIABLE DECLARATION
-	##*===============================================
-	## Variables: Application
-	[string]$appVendor = ''
-	[string]$appName = 'Mathematica'
-	[string]$appVersion = '13.0.0'
-	[string]$appArch = 'x64'
-	[string]$appLang = 'EN'
-	[string]$appRevision = '01'
-	[string]$appScriptVersion = '1.0.0'
-	[string]$appScriptDate = '6/1/2022'
-	[string]$appScriptAuthor = 'Ryan McKenna'
-	##*===============================================
-	## Variables: Install Titles (Only set here to override defaults set by the toolkit)
-	[string]$installName = ''
-	[string]$installTitle = ''
+    ##*===============================================
+    ##* VARIABLE DECLARATION
+    ##*===============================================
+    ## Variables: Application
+    [string]$appVendor = ''
+    [string]$appName = 'Mathematica'
+    [string]$appVersion = '13.2.1'
+    [string]$appArch = 'x64'
+    [string]$appLang = 'EN'
+    [string]$appRevision = '01'
+    [string]$appScriptVersion = '1.0.0'
+    [string]$appScriptDate = '04/10/2023'
+    [string]$appScriptAuthor = 'Will Jarvill'
+    ##*===============================================
+    ## Variables: Install Titles (Only set here to override defaults set by the toolkit)
+    [string]$installName = ''
+    [string]$installTitle = ''
 
-	##* Do not modify section below
-	#region DoNotModify
+    ##* Do not modify section below
+    #region DoNotModify
 
-	## Variables: Exit Code
-	[int32]$mainExitCode = 0
+    ## Variables: Exit Code
+    [Int32]$mainExitCode = 0
 
-	## Variables: Script
-	[string]$deployAppScriptFriendlyName = 'Deploy Application'
-	[version]$deployAppScriptVersion = [version]'3.7.0'
-	[string]$deployAppScriptDate = '02/13/2018'
-	[hashtable]$deployAppScriptParameters = $psBoundParameters
+    ## Variables: Script
+    [String]$deployAppScriptFriendlyName = 'Deploy Application'
+    [version]$deployAppScriptVersion = [Version]'3.9.2'
+    [string]$deployAppScriptDate = '02/02/2023'
+    [hashtable]$deployAppScriptParameters = $PsBoundParameters
 
-	## Variables: Environment
-	If (Test-Path -LiteralPath 'variable:HostInvocation') { $InvocationInfo = $HostInvocation } Else { $InvocationInfo = $MyInvocation }
-	[string]$scriptDirectory = Split-Path -Path $InvocationInfo.MyCommand.Definition -Parent
+    ## Variables: Environment
+    If (Test-Path -LiteralPath 'variable:HostInvocation') {
+        $InvocationInfo = $HostInvocation
+    }
+    Else {
+        $InvocationInfo = $MyInvocation
+    }
+    [String]$scriptDirectory = Split-Path -Path $InvocationInfo.MyCommand.Definition -Parent
 
-	## Dot source the required App Deploy Toolkit Functions
-	Try {
-		[string]$moduleAppDeployToolkitMain = "$scriptDirectory\AppDeployToolkit\AppDeployToolkitMain.ps1"
-		If (-not (Test-Path -LiteralPath $moduleAppDeployToolkitMain -PathType 'Leaf')) { Throw "Module does not exist at the specified location [$moduleAppDeployToolkitMain]." }
-		If ($DisableLogging) { . $moduleAppDeployToolkitMain -DisableLogging } Else { . $moduleAppDeployToolkitMain }
-	}
-	Catch {
-		If ($mainExitCode -eq 0){ [int32]$mainExitCode = 60008 }
-		Write-Error -Message "Module [$moduleAppDeployToolkitMain] failed to load: `n$($_.Exception.Message)`n `n$($_.InvocationInfo.PositionMessage)" -ErrorAction 'Continue'
-		## Exit the script, returning the exit code to SCCM
-		If (Test-Path -LiteralPath 'variable:HostInvocation') { $script:ExitCode = $mainExitCode; Exit } Else { Exit $mainExitCode }
-	}
+    ## Dot source the required App Deploy Toolkit Functions
+    Try {
+        [String]$moduleAppDeployToolkitMain = "$scriptDirectory\AppDeployToolkit\AppDeployToolkitMain.ps1"
+        If (-not (Test-Path -LiteralPath $moduleAppDeployToolkitMain -PathType 'Leaf')) {
+            Throw "Module does not exist at the specified location [$moduleAppDeployToolkitMain]."
+        }
+        If ($DisableLogging) {
+            . $moduleAppDeployToolkitMain -DisableLogging
+        }
+        Else {
+            . $moduleAppDeployToolkitMain
+        }
+    }
+    Catch {
+        If ($mainExitCode -eq 0) {
+            [Int32]$mainExitCode = 60008
+        }
+        Write-Error -Message "Module [$moduleAppDeployToolkitMain] failed to load: `n$($_.Exception.Message)`n `n$($_.InvocationInfo.PositionMessage)" -ErrorAction 'Continue'
+        ## Exit the script, returning the exit code to SCCM
+        If (Test-Path -LiteralPath 'variable:HostInvocation') {
+            $script:ExitCode = $mainExitCode; Exit
+        }
+        Else {
+            Exit $mainExitCode
+        }
+    }
 
-	#endregion
-	##* Do not modify section above
-	##*===============================================
-	##* END VARIABLE DECLARATION
-	##*===============================================
+    #endregion
+    ##* Do not modify section above
+    ##*===============================================
+    ##* END VARIABLE DECLARATION
+    ##*===============================================
 
-	If ($deploymentType -ine 'Uninstall') {
-		##*===============================================
-		##* PRE-INSTALLATION
-		##*===============================================
-		[string]$installPhase = 'Pre-Installation'
+    If ($deploymentType -ine 'Uninstall' -and $deploymentType -ine 'Repair') {
+        ##*===============================================
+        ##* PRE-INSTALLATION
+        ##*===============================================
+        [String]$installPhase = 'Pre-Installation'
 
-		## Show Welcome Message, close Internet Explorer if needed, verify there is enough disk space to complete the install, and persist the prompt
-		Show-InstallationWelcome -CloseApps 'Mathematica' -CheckDiskSpace -PersistPrompt
+        ## Show Welcome Message, close Internet Explorer if required, allow up to 3 deferrals, verify there is enough disk space to complete the install, and persist the prompt
+        Show-InstallationWelcome -CloseApps 'Mathematica' -CheckDiskSpace -PersistPrompt
 
-		## Show Progress Message (with the default message)
-		Show-InstallationProgress
+        ## Show Progress Message (with the default message)
+        Show-InstallationProgress
 
-		## <Perform Pre-Installation tasks here>
+        ## <Perform Pre-Installation tasks here>
 		If ( Test-Path "$envProgramFiles\Wolfram Research\Mathematica\11.1\") {
-              Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\11.1\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
-  		}elseif ( Test-Path "$envProgramFiles\Wolfram Research\Mathematica\12.0\") {
-			Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\12.0\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
-			Execute-MSI -Action Uninstall -Path '{460ACB2E-59A1-11E9-848B-0CC47AC03162}' -PassThru -ContinueOnError $true
-			Remove-Folder "C:\Program Files (x86)\Wolfram Research" -ContinueOnError $True
-		}elseif ( Test-Path "$envProgramFiles\Wolfram Research\Mathematica\13.0\") {
-			Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\13.0\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
-			Execute-MSI -Action Uninstall -Path '{4A18F840-75BA-11EC-9760-00155D8640AA}' -PassThru -ContinueOnError $true
-			Remove-Folder "C:\Program Files\Wolfram Research" -ContinueOnError $True
-		}
+            Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\11.1\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
+        }elseif ( Test-Path "$envProgramFiles\Wolfram Research\Mathematica\12.0\") {
+            Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\12.0\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
+            Execute-MSI -Action Uninstall -Path '{460ACB2E-59A1-11E9-848B-0CC47AC03162}' -PassThru -ContinueOnError $true
+            Remove-Folder "C:\Program Files (x86)\Wolfram Research" -ContinueOnError $True
+        }elseif ( Test-Path "$envProgramFiles\Wolfram Research\Mathematica\13.0\") {
+            Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\13.0\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
+            Execute-MSI -Action Uninstall -Path '{4A18F840-75BA-11EC-9760-00155D8640AA}' -PassThru -ContinueOnError $true
+            Remove-Folder "C:\Program Files\Wolfram Research" -ContinueOnError $True
+        }elseif ( Test-Path "C:\Program Files\Wolfram Research\Mathematica\13.2\") {
+            Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\13.2\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/veryslient /suppressmsgboxes /norestart"
+            Execute-MSI -Action Uninstall -Path '{B20EDAA1-9E9F-11ED-B556-00155DF9472C}' -PassThru -ContinueOnError $true
+            Remove-Folder "C:\Program Files\Wolfram Research" -ContinueOnError $true
+        }
+        ##*===============================================
+        ##* INSTALLATION
+        ##*===============================================
+        [String]$installPhase = 'Installation'
 
-		##*===============================================
-		##* INSTALLATION
-		##*===============================================
-		[string]$installPhase = 'Installation'
+        ## Handle Zero-Config MSI Installations
+        If ($useDefaultMsi) {
+            [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Install'; Path = $defaultMsiFile }; If ($defaultMstFile) {
+                $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
+            }
+            Execute-MSI @ExecuteDefaultMSISplat; If ($defaultMspFiles) {
+                $defaultMspFiles | ForEach-Object { Execute-MSI -Action 'Patch' -Path $_ }
+            }
+        }
 
-		## Handle Zero-Config MSI Installations
-		If ($useDefaultMsi) {
-			[hashtable]$ExecuteDefaultMSISplat =  @{ Action = 'Install'; Path = $defaultMsiFile }; If ($defaultMstFile) { $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile) }
-			Execute-MSI @ExecuteDefaultMSISplat; If ($defaultMspFiles) { $defaultMspFiles | ForEach-Object { Execute-MSI -Action 'Patch' -Path $_ } }
-		}
+        ## <Perform Installation tasks here>
+        Execute-Process -Path "$dirFiles\setup.exe" -Parameters "/verysilent" -IgnoreExitCodes "3010"
 
-		## <Perform Installation tasks here>
-        #Execute-Process -Path "setup.exe" -Parameters "/exenoui /exelang 1033 /qn ACCEPT_EULA=1 LICENSE_SERVER=vmwas22 LICENSE_SERVER_PORT=27090 DISABLE_UPDATES=1" -WindowStyle "Hidden" -IgnoreExitCodes "3010"
+        ##*===============================================
+        ##* POST-INSTALLATION
+        ##*===============================================
+        [String]$installPhase = 'Post-Installation'
 
-        Execute-Process -Path "setup.exe" -Parameters "/verysilent" -IgnoreExitCodes "3010"
-
-		##*===============================================
-		##* POST-INSTALLATION
-		##*===============================================
-		[string]$installPhase = 'Post-Installation'
-
-		## <Perform Post-Installation tasks here>
-
+        ## <Perform Post-Installation tasks here>
         Copy-File -Path "$dirFiles\mathpass" -Destination "C:\ProgramData\Mathematica\Licensing"
+        ## Display a message at the end of the install
+        ## See original PSADT Deploy-Application.ps1 file from GitHub if you want to use this feature
+    }
+    ElseIf ($deploymentType -ieq 'Uninstall') {
+        ##*===============================================
+        ##* PRE-UNINSTALLATION
+        ##*===============================================
+        [String]$installPhase = 'Pre-Uninstallation'
 
-	}
-	ElseIf ($deploymentType -ieq 'Uninstall')
-	{
-		##*===============================================
-		##* PRE-UNINSTALLATION
-		##*===============================================
-		[string]$installPhase = 'Pre-Uninstallation'
+        ## Show Welcome Message, close Internet Explorer with a 60 second countdown before automatically closing
+        Show-InstallationWelcome -CloseApps 'Mathematica' -CloseAppsCountdown 60
 
-		## Show Welcome Message, close Internet Explorer with a 60 second countdown before automatically closing
-		Show-InstallationWelcome -CloseApps 'Mathematica' -CloseAppsCountdown 60
+        ## Show Progress Message (with the default message)
+        Show-InstallationProgress
 
-		## Show Progress Message (with the default message)
-		Show-InstallationProgress
+        ## <Perform Pre-Uninstallation tasks here>
 
-		## <Perform Pre-Uninstallation tasks here>
 
-		##*===============================================
-		##* UNINSTALLATION
-		##*===============================================
-		[string]$installPhase = 'Uninstallation'
+        ##*===============================================
+        ##* UNINSTALLATION
+        ##*===============================================
+        [String]$installPhase = 'Uninstallation'
 
-		## Handle Zero-Config MSI Uninstallations
-		If ($useDefaultMsi) {
-			[hashtable]$ExecuteDefaultMSISplat =  @{ Action = 'Uninstall'; Path = $defaultMsiFile }; If ($defaultMstFile) { $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile) }
-			Execute-MSI @ExecuteDefaultMSISplat
-		}
+        ## Handle Zero-Config MSI Uninstallations
+        If ($useDefaultMsi) {
+            [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Uninstall'; Path = $defaultMsiFile }; If ($defaultMstFile) {
+                $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
+            }
+            Execute-MSI @ExecuteDefaultMSISplat
+        }
 
-		# <Perform Uninstallation tasks here>
-		#Uninstall Mathematica
-        Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\13.0\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent /suppressmsgboxes /norestart"
-		#Uninstall Wolfram Script
-		Execute-MSI -Action Uninstall -Path '{4A18F840-75BA-11EC-9760-00155D8640AA}' -PassThru -ContinueOnError $true
+        ## <Perform Uninstallation tasks here>
+        ## Uninstall Mathematica
+        Execute-Process -Path "$envProgramFiles\Wolfram Research\Mathematica\13.2\SystemFiles\UninstallFiles\Windows\unins000.exe" -Parameters "/verysilent"
+        ## Uninstall Wolfram Script
+        Execute-MSI -Action Uninstall -Path '{B20EDAA1-9E9F-11ED-B556-00155DF9472C}' -PassThru -ContinueOnError $true
+        ##*===============================================
+        ##* POST-UNINSTALLATION
+        ##*===============================================
+        [String]$installPhase = 'Post-Uninstallation'
 
-		##*===============================================
-		##* POST-UNINSTALLATION
-		##*===============================================
-		[string]$installPhase = 'Post-Uninstallation'
+        ## <Perform Post-Uninstallation tasks here>
+        Remove-Folder "C:\Program Files\Wolfram Research" -ContinueOnError $True
 
-		## <Perform Post-Uninstallation tasks here>
+    }
+    ElseIf ($deploymentType -ieq 'Repair') {
+        ##*===============================================
+        ##* PRE-REPAIR
+        ##*===============================================
+        [String]$installPhase = 'Pre-Repair'
 
-		Remove-Folder "C:\Program Files\Wolfram Research" -ContinueOnError $True
-	}
+        ## Show Welcome Message, close Internet Explorer with a 60 second countdown before automatically closing
+        Show-InstallationWelcome -CloseApps 'Mathmatica' -CloseAppsCountdown 60
 
-	##*===============================================
-	##* END SCRIPT BODY
-	##*===============================================
+        ## Show Progress Message (with the default message)
+        Show-InstallationProgress
 
-	## Call the Exit-Script function to perform final cleanup operations
-	Exit-Script -ExitCode $mainExitCode
+        ## <Perform Pre-Repair tasks here>
+
+        ##*===============================================
+        ##* REPAIR
+        ##*===============================================
+        [String]$installPhase = 'Repair'
+
+        ## Handle Zero-Config MSI Repairs
+        If ($useDefaultMsi) {
+            [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Repair'; Path = $defaultMsiFile; }; If ($defaultMstFile) {
+                $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
+            }
+            Execute-MSI @ExecuteDefaultMSISplat
+        }
+        ## <Perform Repair tasks here>
+
+        ##*===============================================
+        ##* POST-REPAIR
+        ##*===============================================
+        [String]$installPhase = 'Post-Repair'
+
+        ## <Perform Post-Repair tasks here>
+
+
+    }
+    ##*===============================================
+    ##* END SCRIPT BODY
+    ##*===============================================
+
+    ## Call the Exit-Script function to perform final cleanup operations
+    Exit-Script -ExitCode $mainExitCode
 }
 Catch {
-	[int32]$mainExitCode = 60001
-	[string]$mainErrorMessage = "$(Resolve-Error)"
-	Write-Log -Message $mainErrorMessage -Severity 3 -Source $deployAppScriptFriendlyName
-	Show-DialogBox -Text $mainErrorMessage -Icon 'Stop'
-	Exit-Script -ExitCode $mainExitCode
+    [Int32]$mainExitCode = 60001
+    [String]$mainErrorMessage = "$(Resolve-Error)"
+    Write-Log -Message $mainErrorMessage -Severity 3 -Source $deployAppScriptFriendlyName
+    Show-DialogBox -Text $mainErrorMessage -Icon 'Stop'
+    Exit-Script -ExitCode $mainExitCode
 }
+
+
 # SIG # Begin signature block
 # MIImVgYJKoZIhvcNAQcCoIImRzCCJkMCAQExDzANBglghkgBZQMEAgEFADB5Bgor
 # BgEEAYI3AgEEoGswaTA0BgorBgEEAYI3AgEeMCYCAwEAAAQQH8w7YFlLCE63JNLG
-# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDgmpY6UOwS3jVg
-# bgAvwOBrcY7nTQihq1d1KD6JkAT0OaCCH8EwggVvMIIEV6ADAgECAhBI/JO0YFWU
+# KX7zUQIBAAIBAAIBAAIBAAIBADAxMA0GCWCGSAFlAwQCAQUABCDaqGpim15urmgA
+# 3FbBN6gflUGln+xpK/XxFNVRELY+JqCCH8EwggVvMIIEV6ADAgECAhBI/JO0YFWU
 # jTanyYqJ1pQWMA0GCSqGSIb3DQEBDAUAMHsxCzAJBgNVBAYTAkdCMRswGQYDVQQI
 # DBJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcMB1NhbGZvcmQxGjAYBgNVBAoM
 # EUNvbW9kbyBDQSBMaW1pdGVkMSEwHwYDVQQDDBhBQUEgQ2VydGlmaWNhdGUgU2Vy
@@ -397,32 +466,32 @@ Catch {
 # ZDErMCkGA1UEAxMiU2VjdGlnbyBQdWJsaWMgQ29kZSBTaWduaW5nIENBIFIzNgIR
 # AKVN33D73PFMVIK48rFyyjEwDQYJYIZIAWUDBAIBBQCggYQwGAYKKwYBBAGCNwIB
 # DDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEE
-# AYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQg3CyPB1mPPvSi
-# G0RRMaSchlf2fCFvVNSzxiXIXv18gQcwDQYJKoZIhvcNAQEBBQAEggGAnuztGCEH
-# x3DujIzWlq7nMtJdkM1XvDlnjzPNchaQ8xwBA1NhCnCw8UKuwGqB3gsUo7D8Kyz9
-# wCRFeKnzkMlm6HyUyhqx1b0MbHzN/fyeg8SbTBDubIvs8nkulZTbwu13zFXVGUZK
-# X1SNA6/zQrRlCk7qK1Mh9kE0Ez2K7CYhMmR4bXR9mOfw2Tab7ljN7R/88t9aAcfw
-# HtVrsmL4wVKk+DXc6UbcjhcEsAulAb1dtNUgqqczivMLIhZJ743417ohZJTUiyAb
-# vWZ4J5cXdl+HHuS+3kqAPa/x/FdVPcr4mgbwLE3qvnP/Rsu3gRtLRTjOf4LMM/gD
-# uZnh5q4cr2oStNY1qtZOhxomhfSkrLIlaRzMZ8w4VI0YmA+UElDKGbf60QYriXZ0
-# PBvAFajSSE5H12cxvsKQ7tX9oDJiG82XWjS6AXtuLKYV+8Ur53eDMA8TDJeM0wTx
-# eVeod+Tc29BJBEz42rdXoI+hahIk8N4lIrko9gkWEZ5MS/0Pup1bkdUXoYIDTDCC
+# AYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAvBgkqhkiG9w0BCQQxIgQg5uw3rOOCYg4f
+# eXS7ZhU+pFZ9zHMVh9SRb5MjepX70U4wDQYJKoZIhvcNAQEBBQAEggGApLfIBkWA
+# zYED7XACOuaqvLNogpduTys13OFX+YUyZEjh3deyn5GUoq5xU4PyBT7JvXyEfQwD
+# +l9d31uBnMe88fFFl77UTniuhLXsQ1uKkEhzGGs8ahTWnhVxGEddfz+VKq3BPTdt
+# uLVN9g+G5ki9BTV2xeDxwbQAFlci2So74fYSOiz7tSP1I773G2LAh1DCg6u07iRx
+# m8yrwTdZkpuK1ChacmEyqcvr6hOOOD6XBrcOrHeanRVT3myekGlS7rxKq7ltdb1g
+# sAKDO13fc+nI6v+ynQ0Ft19AC9YHTKFdKmUlDi4lJfmgt4jbb9H4F13+2oHeuMi8
+# tSPRwRUd8geGSiuOm+CPf8QYhJR1SXatIiOLk9LLIkUBSlA2DlBhsC45GjFg443p
+# N+JlRoKzGUuZC1ZAaGpFWs7yU56LsdaZ6CtKtA4WRrgAcbStPjXgz+B0XSpAdshA
+# Kd2oWUMTMk5L7qfpxZJfTNITbV25ss5h0kQE/dyLFAN9fSdPG0D106cOoYIDTDCC
 # A0gGCSqGSIb3DQEJBjGCAzkwggM1AgEBMIGSMH0xCzAJBgNVBAYTAkdCMRswGQYD
 # VQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1NhbGZvcmQxGDAWBgNV
 # BAoTD1NlY3RpZ28gTGltaXRlZDElMCMGA1UEAxMcU2VjdGlnbyBSU0EgVGltZSBT
 # dGFtcGluZyBDQQIRAJA5f5rSSjoT8r2RXwg4qUMwDQYJYIZIAWUDBAICBQCgeTAY
-# BgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMjA2MDIy
-# MTQzMzBaMD8GCSqGSIb3DQEJBDEyBDCfudSyWxGmqTR/yEwstS8IdoQRpPp9S5rM
-# igdvdKBdEQs0gKdPmI95yT9NEuLJNjowDQYJKoZIhvcNAQEBBQAEggIAdI0VbkRi
-# 4xBQxbdqMfsIfltBUp7V2hKeC2JlOaa3OmpD63SmR6SoWIpyjbDTPNCMb06ATUb/
-# qxT2TqJkXJxW0yAd7Nrcj9eoc40gEOPbz0NJKE4ocVnAGhRZz9+XDiAn+Lk7khKv
-# 2DODeapHbDKi6uYVA5jQQTJ9UNP0g972BEnYAAYgrvjWCmhyCHX0/wzx2VCZeGJD
-# dUkQXEoG3Mmo8YjgdlgY+cxpNOOHS+ivnn9g4AmH+6t42YPRWdv/3rjY8iNVpgmg
-# /pYjc4+x5Ni5ExKowKhKPb3K3TsR6BNfB27EkbJB7Eh7wkVg/z6ka5G/1e62cXMb
-# g0SgshAsUufNKjpEqQfsRolEqoSFlH/xqciSSEnZYYPLnLzXCNheVGhM6CclipjT
-# 9d9irg2zfDewF5o6xo3gdhTrEbOAqL3E/F4uJLwEoiD29JaQ4lnYeahSm9CVrg9b
-# 2LGeYGhc/i6MvkfHIivbuCUlHfD6qk6qO+V6cHrtQFtTi+bVY5W7e9PqPEDcPX5A
-# fMCwfhRQ55yZ28MOsDWXJ3veOKm781yStk3EWFJT3/7oYLEyngaRMlo8H0+/c04J
-# ZfZjQ5QXj0iU0+3+5pmI44/CAjo/ySZDVaJGzMI1sNF3cvOI88Ok0kREPVhJN13f
-# gQu7T7TLJ7UQ+Sv5myEuvcSwq2/QbFgrBVY=
+# BgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0yMzA0MTAy
+# MTUzMzFaMD8GCSqGSIb3DQEJBDEyBDAyP1Z9Vzasxf/10DqpO24vWnTDz/uMCgSo
+# sAwWAPNkL3krmpML4WjMEHrIS6sBSF4wDQYJKoZIhvcNAQEBBQAEggIAX4FXuIgi
+# xm+zwgF2RiozF/GH8bTfKHVJbsr+2Zz7sy58jGbmG+9wxHzrqSvkbP8NNc/6vPq9
+# w9xyD7TKOPxAXyqfPTxe7EFEyb5mDUDCja05GierA6B7IiO8Y7vvY2GJi3jCJw+N
+# vUmoZt9GiU2WrK2EcpS35NuwzKSPHlt3AZXMhvOBM+5cpd2ha4FI/8Dt0u/hTAkX
+# r9DzUCvUDOR2MiMcIH6T7s4htyL25iB4E/QYuabYdkYYERTHNpwsdsQiZ8WjvsYL
+# aP5RUln56VT4GlbzyzpkVh6SVSclI/u/1XhLJtEY7sl8ds+1JHpDIA9ikeBRaKS1
+# GLPXbUnE/hP7HYu7BVDww3zcVQFc+cDRh5XzfZmaDIc3j9eOe6A9ET2RBgPxf/mO
+# Wnf4rNFKIpWSsnr7DVBymlotu8opkveKM1yqlhFyWDUBTVw8i989FfPjINkzvM1S
+# MNEsKMZnuBAwCvOEb8laHFzhI6jxvtLRNLZMfmucJTI89JoCmZF8w5+eEqS0E094
+# o4idXWlYeLS8tJkW316Cay1pPs1RswjaBbhmBkrZPqOIj9quDm1ZMvkQ4zd5y8R8
+# hJNrDAfpYY5VBofuG6RNaXRO4OADwr93HiZCXPfV71Nz8moLsdotvR/a7NNcRm8z
+# V2WKlbxH2EUy/ZjLhNikJ6YbHRUkW1RFqXY=
 # SIG # End signature block
